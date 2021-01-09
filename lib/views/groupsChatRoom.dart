@@ -5,22 +5,25 @@ import 'package:Frizz/main.dart';
 import 'package:Frizz/services/auth.dart';
 import 'package:Frizz/services/database.dart';
 import 'package:Frizz/views/chat.dart';
-import 'package:Frizz/views/groupsChatRoom.dart';
+import 'package:Frizz/views/groupchat.dart';
 import 'package:Frizz/views/search.dart';
+import 'package:Frizz/views/searchGroup.dart';
+import 'package:Frizz/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 
-class ChatRoom extends StatefulWidget {
+class GroupChatRoom extends StatefulWidget {
   @override
-  _ChatRoomState createState() => _ChatRoomState();
+  _GroupChatRoomState createState() => _GroupChatRoomState();
 }
 
-class _ChatRoomState extends State<ChatRoom> {
-  List<String> users = [];
+class _GroupChatRoomState extends State<GroupChatRoom> {
+  List<dynamic> users = [];
 
   Map<String, dynamic> groupChatMap;
   AuthMethods authMethods = AuthMethods();
   DatabaseMethods database = DatabaseMethods();
-  Stream chatRoomStream;
+  Stream groupChatRoomStream;
+  TextEditingController groupTextEditingController = TextEditingController();
 
   @override
   void initState() {
@@ -30,7 +33,7 @@ class _ChatRoomState extends State<ChatRoom> {
 
   Widget chatRoomBuilder() {
     return StreamBuilder(
-        stream: chatRoomStream,
+        stream: groupChatRoomStream,
         builder: (context, snapshot) {
           return snapshot.hasData
               ? ListView.builder(
@@ -39,9 +42,7 @@ class _ChatRoomState extends State<ChatRoom> {
                     return ChatRoomsListTile(
                         snapshot.data.documents[index]
                             .data()['chatRoomId']
-                            .toString()
-                            .replaceAll("_", "")
-                            .replaceAll(Constants.myName, ""),
+                            .toString(),
                         snapshot.data.documents[index].data()['chatRoomId']);
                   },
                 )
@@ -52,9 +53,9 @@ class _ChatRoomState extends State<ChatRoom> {
   getUserInfo() async {
     Constants.myName = await HelperFunctions.getUserNameSharedPreference();
 
-    await database.getChatRooms(Constants.myName).then((value) {
+    await database.getGroupChatRooms(Constants.myName).then((value) {
       setState(() {
-        chatRoomStream = value;
+        groupChatRoomStream = value;
         print("This is name  ${Constants.myName}");
       });
     });
@@ -67,7 +68,7 @@ class _ChatRoomState extends State<ChatRoom> {
       appBar: AppBar(
         backgroundColor: bgColor,
         title: Text(
-          "FrizzChat",
+          "Groups",
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 22),
         ),
         actions: [
@@ -80,13 +81,49 @@ class _ChatRoomState extends State<ChatRoom> {
               }),
           IconButton(
               icon: Icon(
-                Icons.people,
+                Icons.person_add,
                 color: Colors.white,
               ),
               onPressed: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => GroupChatRoom()));
+                showDialog(
+                    context: (context),
+                    builder: (context) {
+                      return AlertDialog(
+                        title: Text("Create Group"),
+                        content: TextField(
+                          controller: groupTextEditingController,
+                        ),
+                        actions: [
+                          RaisedButton(
+                            onPressed: () {
+                              users.add(Constants.myName);
+                              groupChatMap = {
+                                "users": users,
+                                "chatRoomId": groupTextEditingController.text
+                              };
+                              database.createGroupChatRoom(
+                                  groupTextEditingController.text,
+                                  groupChatMap);
+                              Navigator.pop(context);
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => GroupChat(
+                                        groupTextEditingController.text),
+                                  ));
+                            },
+                            child: Text("Create"),
+                          )
+                        ],
+                      );
+                    });
               }),
+          IconButton(
+              icon: Icon(Icons.search),
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => SearchGroup()));
+              })
         ],
       ),
       body: chatRoomBuilder(),
@@ -112,17 +149,13 @@ class ChatRoomsListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-            context, MaterialPageRoute(builder: (context) => Chat(chatRoomId)));
+        Navigator.push(context,
+            MaterialPageRoute(builder: (context) => GroupChat(chatRoomId)));
       },
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         decoration: BoxDecoration(
-            color: primary, borderRadius: BorderRadius.circular(12)
-            // gradient: LinearGradient(
-            //   colors: [Color(0xff4b4b4b), Color(0xff3d3d3d)],
-            // ),
-            ),
+            color: primary, borderRadius: BorderRadius.circular(12)),
         padding: EdgeInsets.symmetric(horizontal: 15, vertical: 15),
         child: Row(
           children: [

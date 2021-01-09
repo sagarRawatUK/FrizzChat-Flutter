@@ -145,7 +145,7 @@ class _SignUpState extends State<SignUp> {
                           child: Text(
                             "Sign up with Google",
                             style: TextStyle(
-                              color: Colors.blue,
+                              color: highlightColor,
                               fontSize: 17,
                             ),
                           )),

@@ -1,27 +1,25 @@
 import 'package:Frizz/helper/constants.dart';
+import 'package:Frizz/main.dart';
 import 'package:Frizz/services/database.dart';
 import 'package:Frizz/widgets/widgets.dart';
 import 'package:flutter/material.dart';
-import 'package:Frizz/main.dart';
 import 'package:intl/intl.dart';
 
-final Color myColor = primary;
-
-class Chat extends StatefulWidget {
-  final String chatRoomId;
-  Chat(this.chatRoomId);
+class GroupChat extends StatefulWidget {
+  String groupId;
+  GroupChat(this.groupId);
   @override
-  _ChatState createState() => _ChatState();
+  _GroupChatState createState() => _GroupChatState();
 }
 
-class _ChatState extends State<Chat> {
+class _GroupChatState extends State<GroupChat> {
   Stream chatStream;
   DatabaseMethods database = DatabaseMethods();
   TextEditingController messageEditingController = TextEditingController();
 
   @override
   void initState() {
-    database.getChatMessages(widget.chatRoomId).then((value) {
+    database.getGroupChatMessages(widget.groupId).then((value) {
       setState(() {
         chatStream = value;
       });
@@ -38,8 +36,7 @@ class _ChatState extends State<Chat> {
                   itemBuilder: (context, index) {
                     return ChatTile(
                         snapshot.data.documents[index].data()['message'],
-                        snapshot.data.documents[index].data()['sentBy'] ==
-                            Constants.myName,
+                        snapshot.data.documents[index].data()['sentBy'],
                         snapshot.data.documents[index].data()['sentTime']);
                   },
                   itemCount: snapshot.data.documents.length,
@@ -53,9 +50,9 @@ class _ChatState extends State<Chat> {
       "message": messageEditingController.text,
       "sentBy": Constants.myName,
       "time": DateTime.now().millisecondsSinceEpoch,
-      "sentTime": DateFormat.jm().format(DateTime.now())
+      "sentTime": DateFormat('kk:mm a').format(DateTime.now())
     };
-    database.addChatMessages(widget.chatRoomId, chatMap);
+    database.addGroupChatMessages(widget.groupId, chatMap);
     messageEditingController.text = "";
   }
 
@@ -63,7 +60,14 @@ class _ChatState extends State<Chat> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
-      appBar: appBarMain(context),
+      appBar: AppBar(
+        backgroundColor: bgColor,
+        title: Text(
+          widget.groupId,
+          style: TextStyle(
+              fontWeight: FontWeight.bold, fontSize: 20, color: highlightColor),
+        ),
+      ),
       body: Container(
         child: Stack(
           children: [
@@ -112,26 +116,23 @@ class _ChatState extends State<Chat> {
 
 class ChatTile extends StatelessWidget {
   final String message;
-  final bool isSentByMe;
+  final String sentBy;
   final dynamic sentTime;
-  ChatTile(this.message, this.isSentByMe, this.sentTime);
+  ChatTile(this.message, this.sentBy, this.sentTime);
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.symmetric(vertical: 3, horizontal: 8),
       width: MediaQuery.of(context).size.width,
-      alignment: isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: sentBy == Constants.myName
+          ? Alignment.centerRight
+          : Alignment.centerLeft,
       child: Container(
         margin: EdgeInsets.symmetric(vertical: 3, horizontal: 5),
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-            color: isSentByMe ? highlightColor : primary,
-            // gradient: LinearGradient(
-            //   colors: isSentByMe
-            //       ? [myColor, myColorDark]
-            //       : [Color(0xff4b4b4b), Color(0xff3d3d3d)],
-            // ),
-            borderRadius: isSentByMe
+            color: sentBy == Constants.myName ? highlightColor : primary,
+            borderRadius: sentBy == Constants.myName
                 ? BorderRadius.only(
                     topLeft: Radius.circular(15),
                     topRight: Radius.circular(15),
@@ -142,29 +143,52 @@ class ChatTile extends StatelessWidget {
                     topRight: Radius.circular(15),
                     bottomRight: Radius.circular(15),
                   )),
-        child: Container(
-          child: Column(
-            children: [
-              Text(
-                message,
-                style: TextStyle(
-                  color: isSentByMe ? Colors.black : Colors.white,
-                  fontSize: 16,
-                ),
-              ),
-              Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      sentTime.toString(),
-                      style: TextStyle(
-                          color: isSentByMe ? Colors.black : Colors.white,
-                          fontSize: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              child: Column(
+                children: [
+                  sentBy == Constants.myName
+                      ? Container()
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Text(
+                              sentBy,
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                  Text(
+                    message,
+                    style: TextStyle(
+                      color: sentBy == Constants.myName
+                          ? Colors.black
+                          : Colors.white,
+                      fontSize: 17,
                     ),
-                  ])
-            ],
-          ),
+                  ),
+                  Container(
+                    child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            sentTime.toString(),
+                            style: TextStyle(
+                                color: sentBy == Constants.myName
+                                    ? Colors.black
+                                    : Colors.white,
+                                fontSize: 8),
+                          ),
+                        ]),
+                  )
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

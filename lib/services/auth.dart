@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthMethods {
   final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
@@ -35,6 +36,9 @@ class AuthMethods {
 
   Future signOut() async {
     try {
+      SharedPreferences sharedPreferences =
+          await SharedPreferences.getInstance();
+      sharedPreferences.clear();
       return await firebaseAuth.signOut();
     } catch (e) {
       print(e);

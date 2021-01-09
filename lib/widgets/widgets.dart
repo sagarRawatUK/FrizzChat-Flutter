@@ -5,8 +5,9 @@ Widget appBarMain(BuildContext context) {
   return AppBar(
     backgroundColor: bgColor,
     title: Text(
-      "Frizz Chat",
-      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+      "FrizzChat",
+      style: TextStyle(
+          fontWeight: FontWeight.bold, fontSize: 20, color: highlightColor),
     ),
   );
 }
